@@ -7,7 +7,7 @@ from sms_spam_classifier_utilities import one_hot_encode, vectorize_sequences
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
-SAGEMAKER_ENDPOINT = '<SageMaker-Endpoint'
+SAGEMAKER_ENDPOINT = '<SageMaker-Endpoint>'
 VOCABULARY_LENGTH = 9013
 
 def convert_date(date):
@@ -99,7 +99,7 @@ def lambda_handler(event, context):
     result = "\nscore:   " + str(score) + \
              "\nlabel:   " + str(label) + \
              "\nsender:  " + sender + \
-             "\date:     " + date + \
+             "\ndate:     " + date + \
              "\nsubject: " + subject + \
              "\nreceiver:" + receiver + \
              "\nbody:    " + body[0]
