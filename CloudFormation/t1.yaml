@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EmailSpamPredicter
+
+Parameters:
+  SageMakerEndpoint: 
+    Type: String
+    Default: sms-spam-classifier-mxnet-2022-05-03-14-44-46-337
+    AllowedValues:
+      - sms-spam-classifier-mxnet-2022-05-03-14-44-46-337
+
+Resources:
+
+  EmailStore:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+
+  EmailStoreBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties: 
+      Bucket: !Ref EmailStore
+      PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            Action: s3:PutObject
+            Sid: AllowSESPuts
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref EmailStore
+                - /*
+            Principal:
+              Service: ses.amazonaws.com
+            Condition:
+              StringEquals:
+                  'AWS:SourceArn': 
+                    - arn:aws:ses:us-east-1:226740886615:receipt-rule-set/receipt-rule-set:receipt-rule/receipt-forwarding
+                  'AWS:SourceAccount': 
+                    - 226740886615
+    DependsOn:
+      - EmailStore
+
+  LambdaFunctionOne:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.9
+      Environment:
+        Variables:
+          SAGEMAKER_ENDPOINT: 
+            Ref: SageMakerEndpoint
+      Code:
+        S3Bucket: b3-lf1-code
+        S3Key: lambda.zip
+      Role: arn:aws:iam::226740886615:role/service-role/lf1-predict-role-g49dfxee
+      Handler: lf1_predict.lambda_handler
+      Layers:
+        - arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p39-numpy:2
+
+  ReceiptRuleSet:
+    Type: AWS::SES::ReceiptRuleSet
+    Properties:
+      RuleSetName: receipt-rule-set
+    DependsOn:
+      - EmailStoreBucketPolicy
+  
+  ReceiptRule:
+    Type: AWS::SES::ReceiptRule
+    Properties: 
+      RuleSetName: !Ref ReceiptRuleSet
+      Rule:
+        Name: receipt-forwarding
+        Enabled: true
+        ScanEnabled: false
+        TlsPolicy: Optional
+        Actions:
+          - S3Action:
+              BucketName: !Ref EmailStore
+    DependsOn:
+      - ReceiptRuleSet

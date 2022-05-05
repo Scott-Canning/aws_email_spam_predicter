@@ -3,11 +3,12 @@ import json
 import email
 import logging
 import datetime
+import os
 from sms_spam_classifier_utilities import one_hot_encode, vectorize_sequences
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
-SAGEMAKER_ENDPOINT = '<SageMaker-Endpoint'
+SAGEMAKER_ENDPOINT = os.environ['SAGEMAKER_ENDPOINT']
 VOCABULARY_LENGTH = 9013
 
 def convert_date(date):
