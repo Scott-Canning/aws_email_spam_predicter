@@ -57,7 +57,7 @@ def inference(body):
         label = 'SPAM'
     score = round(json_response['predicted_probability'][0][0], 4)
     score = score * 100
- 
+
     return score, label
 
 
@@ -100,15 +100,13 @@ def lambda_handler(event, context):
     result = "\nscore:   " + str(score) + \
              "\nlabel:   " + str(label) + \
              "\nsender:  " + sender + \
-             "\date:     " + date + \
+             "\ndate:     " + date + \
              "\nsubject: " + subject + \
              "\nreceiver:" + receiver + \
              "\nbody:    " + body[0]
     
     send_response(str(score), str(label), sender, date, receiver, subject, body[0])
-    
-    #logger.debug("result={}".format(result))
-    
+        
     return {
         'statusCode': 200,
         'body': json.dumps(result)
