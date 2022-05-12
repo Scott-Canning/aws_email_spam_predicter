@@ -33,10 +33,29 @@ def get_email(event):
     subject = email_object.get('Subject')
     date = convert_date(email_object.get('Date'))
     receiver = email_object.get('To')
-    body = email_object.get_payload()[0].get_payload()
-    format_body = body.strip('\n')
-    format_body = [format_body.replace("=", "")]
     
+    body = ""
+    if email_object.is_multipart():
+        print("multi part")
+        for part in email_object.walk():
+            ctype = part.get_content_type()
+            cdispo = str(part.get('Content-Disposition'))
+            # skip any text/plain (txt) attachments
+            if ctype == 'text/plain' and 'attachment' not in cdispo:
+                body = part.get_payload(decode=True)
+                break
+    else:
+        body = email_object.get_payload()
+        
+    logger.debug(" >>>> body={}".format(body))
+    
+    try:
+        body = body.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+    
+    body_strip = body.strip('\n')
+    format_body = [body_strip.replace("=", "")]
     return sender, subject, date, receiver, format_body
 
 
@@ -58,6 +77,8 @@ def inference(body):
     score = round(json_response['predicted_probability'][0][0], 4)
     score = score * 100
 
+    # print("[inference] label: ", label)
+    # print("[inference] score: ", score)    
     return score, label
 
 
@@ -106,7 +127,9 @@ def lambda_handler(event, context):
              "\nbody:    " + body[0]
     
     send_response(str(score), str(label), sender, date, receiver, subject, body[0])
-        
+    
+    #logger.debug("result={}".format(result))
+    
     return {
         'statusCode': 200,
         'body': json.dumps(result)
